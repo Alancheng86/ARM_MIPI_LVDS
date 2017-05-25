@@ -293,25 +293,16 @@ LCDTest:
         
         DelayMs(15); 
         STM32_Init_SSD2828(); 		//////系统对LCD进行输送初始化
-        
-        
-        
-//		sdcap = READ_IC_A(0xD9,0x00);LCD1602_display_hex(Line1602_1,10,MIPI_READ_DATA[1]);
-//		SSD2828_VIDEO_MODE_HS();
 		
-		LCD1602_display_Line(Line1602_1,"M1638A0_A2_ban     ");
+		LCD1602_display_Line(Line1602_1,"M1638A0_ban_A2     ");
 		{
 		 BL_ON();     ////背光控制
 		 BL_ON();     ////背光控制
 		 BL_ON();     ////背光控制
 		}
 		DelayMs(50); 
-        
-//		if(MIPI_READ_DATA[1] == 0x6F)
-//		{	LCD1602_display_Line(Line1602_1,"OTP NG    ");	while(1){if(B6_event_flag == 2)  { B6_event_flag=0;    goto LCDTest;  } }	}
-			
+		
         if(B6_event_flag == 2)  { B6_event_flag=0;    goto LCDTest;  }   		         
-//DelayMs(51); 
         
 //        LCD1602_display_Line_A(Line1602_1,0,"                ");       ////clear  当前行 
 //         LCD1602_display_DATA(Line1602_1,9,Measure_IOIDD(mA));/////////////////电流监测。。 
@@ -328,7 +319,6 @@ LCDTest:
     {        
         
         pic_num_string =  PIC_SET_CACHE[pic_num][0];  	/////读取需要显示的画面顺序，依次进行显示。。
-//        nosdnodelay=0;
        Pattern(pic_num_string);
 		LED_RUN();
         
