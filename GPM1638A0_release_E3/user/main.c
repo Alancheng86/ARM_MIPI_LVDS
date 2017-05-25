@@ -298,7 +298,7 @@ LCDTest:
         }
         SSD2828_VIDEO_MODE_HS();
 		
-		LCD1602_display_Line(Line1602_1,"M1638A0_A_OTP    ");
+		LCD1602_display_Line(Line1602_1,"M1638A0_OTP_A1    ");
 		{
             BL_ON();     ////背光控制
             BL_ON();     ////背光控制
@@ -389,6 +389,7 @@ LCDTest:
 			if(mm_KEYB10 == 0)      /////////++
             {
                 VCOMDH++;
+							if(VCOMDH > 0x00FF)	{		VCOMDH = 0;		}
 //                SSD2828_ENTER_LP_mode(); //enter  LP mode	
 //                STM32TOSSD2828_W_COM(0xb7);		//LP DCS mode
 //                STM32TOSSD2828_W_DATA_16BITS(0x0752);
@@ -403,6 +404,7 @@ LCDTest:
             if(mm_KEYB11 == 0)       /////////--
             {
                 VCOMDH--;
+							if(VCOMDH<0)	{		VCOMDH = 0x00FF;		}
 //                SSD2828_ENTER_LP_mode(); //enter  LP mode				
 				DelayMs(6);
                 VCOM_set(VCOMDH);
