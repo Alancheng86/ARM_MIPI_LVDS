@@ -299,7 +299,7 @@ LCDTest:
 //		sdcap = READ_IC_A(0xD9,0x00);LCD1602_display_hex(Line1602_1,10,MIPI_READ_DATA[1]);
 //		SSD2828_VIDEO_MODE_HS();
 		
-		LCD1602_display_Line(Line1602_1,"M1638A0_A1_ban     ");
+		LCD1602_display_Line(Line1602_1,"M1638A0_A2_ban     ");
 		{
 		 BL_ON();     ////背光控制
 		 BL_ON();     ////背光控制
