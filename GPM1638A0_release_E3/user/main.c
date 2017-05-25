@@ -293,12 +293,12 @@ LCDTest:
 //		 sdcap = READ_IC(0xDA,0x00);LCD1602_display_hex(Line1602_0,10,MIPI_READ_DATA[0]);
 		if((OTP_VALUE1 == VCOM_default)||(sdcap == 0))       ////////若产品VCOM为默认值则进入OTP流程。
         {       
-            MAN_OTP_FLAG=1;    /////进入手动OTP标志位
-            AUTO_OTP_FLAG=1;   /////进入自动OTP标志位
+//            MAN_OTP_FLAG=1;    /////进入手动OTP标志位
+//            AUTO_OTP_FLAG=1;   /////进入自动OTP标志位
         }
         SSD2828_VIDEO_MODE_HS();
 		
-		LCD1602_display_Line(Line1602_1,"M1638A0_A_OTP    ");
+		LCD1602_display_Line(Line1602_1,"M1638A0_A_QC    ");
 		{
             BL_ON();     ////背光控制
             BL_ON();     ////背光控制
