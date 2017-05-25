@@ -207,8 +207,10 @@ int main(void)
  {
 // 	u32 i,j;
 // 	u8 tempx;
-    u32  sdcap=0;
-     u16 OTP_VALUE1=0;
+    u32  sdcap=1;
+    u16 mm_KEYB10 = 1 ;
+	u16 mm_KEYB1 = 1 ;
+	u16 mm_KEYB11 = 1 ;
 //    u8 temp[8];
 //     u32 test_times=0;
     
@@ -223,14 +225,17 @@ int main(void)
 ////////////////////////////////////////////////////////////////////////////
         
 LCDTest:           
-        OTP_VALUE1 = 0;
+        MTP_OVER=0;     //////开机即需进行OTP标志位
+        sdcap = 1;
+        MAN_OTP_FLAG=0;    /////进入手动OTP标志位
+        AUTO_OTP_FLAG=0;   /////进入自动OTP标志位
         VDD_OFF(); 		///////MIPI芯片上电
 		LCM_VDD_OFF();       ////////产品LCD的VDD和IOVDD上电。
+        OTP_ERROR_MESAGE=0;
 		BL_OFF();     ////背光控制
         LCD1602_PIN_Configuration();		/////初始化1602显示屏。
         LCD1602_Init();             //delay_ms(40);  
          T226_intion();    ////电流监测，，测机上电电流监测。。
-		 
 		 VDD_config();		////相应电源以及背光IO配置，便于LCD上电。。
 		 delay_ms(1);
 
@@ -278,41 +283,35 @@ LCDTest:
 		{	sdcap = KEY_RED;	DelayMs(5); LCD1602_display_Line(Line1602_1,"MTP ON");	}	/////利用按键盒红色按键，进行暂停，调整VDD/OTP电压使用。
 		MTP_5V_OFF();		//关闭MTP的5V供电
 		DelayMs(5); 
-	   STM32_Init_SSD2828(); 		//////系统对LCD进行输送初始化
+		if((B6_event_flag==2))  { B6_event_flag=0;    goto LCDTest;  }  
+	    STM32_Init_SSD2828(); 		//////系统对LCD进行输送初始化
 		
-        /////取D800H寄存器进行判定是否有做过OTP，默认值为0X27，若等于默认值，则直接进入OTP。。。
-        OTP_VALUE1 = READ_IC_A(0xD8,0x00);LCD1602_display_hex(Line1602_1,10,MIPI_READ_DATA[1]);
-		SSD2828_VIDEO_MODE_HS();
-        
-        sdcap = KEY_AUTO_MODE;
-        if((sdcap == 0)||(OTP_VALUE1 == 0X27))
-        {
-            MTP();
-            DelayMs(50); 
+		sdcap = KEY_AUTO_MODE;
+		OTP_VALUE1 = READ_IC_A(0xD9,0x00);           LCD1602_display_hex(Line1602_1,10,OTP_VALUE1);
+//		sdcap = READ_IC(0xDC,0x00);LCD1602_display_hex(Line1602_1,10,MIPI_READ_DATA[0]);
+////		 sdcap = READ_IC(0xDB,0x00);LCD1602_display_hex(Line1602_0,10,MIPI_READ_DATA[0]);
+//		 sdcap = READ_IC(0xDA,0x00);LCD1602_display_hex(Line1602_0,10,MIPI_READ_DATA[0]);
+		if((OTP_VALUE1 == VCOM_default)||(sdcap == 0))       ////////若产品VCOM为默认值则进入OTP流程。
+        {       
+            MAN_OTP_FLAG=1;    /////进入手动OTP标志位
+            AUTO_OTP_FLAG=1;   /////进入自动OTP标志位
         }
-        
-        DelayMs(15); 
-        STM32_Init_SSD2828(); 		//////系统对LCD进行输送初始化
-        
-        
-        
-//		sdcap = READ_IC_A(0xD9,0x00);LCD1602_display_hex(Line1602_1,10,MIPI_READ_DATA[1]);
-//		SSD2828_VIDEO_MODE_HS();
+        SSD2828_VIDEO_MODE_HS();
 		
-		LCD1602_display_Line(Line1602_1,"M1638A0_A2_ban     ");
+		LCD1602_display_Line(Line1602_1,"M1638A0_A_OTP    ");
 		{
-		 BL_ON();     ////背光控制
-		 BL_ON();     ////背光控制
-		 BL_ON();     ////背光控制
+            BL_ON();     ////背光控制
+            BL_ON();     ////背光控制
+            BL_ON();     ////背光控制
+            DelayMs(50);
 		}
-		DelayMs(50); 
+
+        if((B6_event_flag==2))  { B6_event_flag=0;    goto LCDTest;  }   		         
+
         
-//		if(MIPI_READ_DATA[1] == 0x6F)
-//		{	LCD1602_display_Line(Line1602_1,"OTP NG    ");	while(1){if(B6_event_flag == 2)  { B6_event_flag=0;    goto LCDTest;  } }	}
-			
-        if(B6_event_flag == 2)  { B6_event_flag=0;    goto LCDTest;  }   		         
-//DelayMs(51); 
-        
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////---------------------------开机VSP/N电流以及系统VDD电流检测，数值显示在LCD1602上。
+///////////////////////////////////////////////////////////////////////////////////////////////////////////   	
 //        LCD1602_display_Line_A(Line1602_1,0,"                ");       ////clear  当前行 
 //         LCD1602_display_DATA(Line1602_1,9,Measure_IOIDD(mA));/////////////////电流监测。。 
 //         LCD1602_display_Line_A(Line1602_1,14,"mA");
@@ -324,14 +323,141 @@ LCDTest:
         
       GET_PIC_MAX_NUM();	//////读取显示图片信息。。
       pic_num = 1;   /////////设置第一幅显示图片，从1开始计数，
-    while(1)
-    {        
+     
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////---------------------------进入自动OTP模式code
+///////////////////////////////////////////////////////////////////////////////////////////////////////////        
+//    if(AUTO_OTP_FLAG)
+//    {
+//        sdcap = KEY_AUTO_MODE;
+//		while(( sdcap == 0)&&(MTP_OVER == 0))
+//            {
+//                sdcap = KEY_AUTO_MODE;
+//			
+//            pic_num = 10;/////SD卡内的flicker画面，画面编号002
+////			pic_num_string =  PIC_SET_CACHE[pic_num][0];  	/////读取需要显示的画面顺序，依次进行显示。。
+////			nosdnodelay=0;
+////			Pattern(pic_num_string);
+//			
+////			pic_num ++;
+//			pic_num_string =  PIC_SET_CACHE[pic_num][0];  	/////读取需要显示的画面顺序，依次进行显示。。
+//			nosdnodelay=0;
+//			Pattern(pic_num_string);DelayMs(100);  
+//			TSL_GPIO_Config();		/////sensor use
+//            if((B6_event_flag==2))  {            B6_event_flag=0;    goto LCDTest;               } 
+//            
+//			{
+//				Auto_otp();
+////				LCD1602_display_hex(Line1602_1,0,VCOMDC1);
+////				LCD1602_display_DATA(Line1602_1,11,GET_FLICKER());	DelayMs(200);
+//			}
+//            if((B6_event_flag==2))  {            B6_event_flag=0;    goto LCDTest;               } 
+//            
+//            
+//			if((OTP_VALUE1 != VCOMDC1)||(OTP_ERROR_MESAGE>0))
+//			{	
+//                while(1)
+//                {
+//                    DelayMs(100); 
+//                    LCD1602_display_Line(Line1602_0,"OTP ERROR     NG");
+////                    LCD1602_display_hex(Line1602_1,0,VCOMDC1);
+//                    pic_num = 10;	ID_OK = 1;
+//                    if((B6_event_flag==2))  {            B6_event_flag=0;    goto LCDTest;               } 
+//                }
+//            }
+//            }
+//    }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////---------------------------进入手动OTP模式code
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if(MAN_OTP_FLAG)
+    {
+        pic_num = 9;/////SD卡内的flicker画面，画面编号002
+        pic_num_string =  PIC_SET_CACHE[pic_num][0];  	/////读取需要显示的画面顺序，依次进行显示。。
+//        nosdnodelay=0;
+        Pattern(pic_num_string);DelayMs(100); 
+        LCD1602_display_Line(Line1602_0,"flicker adjust------");
+        LCD1602_display_Line(Line1602_1,"+/- begin          ");
+        while(MAN_OTP_FLAG)
+        {
+			mm_KEYB1  =  	KEY_PAUSE;
+            mm_KEYB10 = 	KEY_UP;
+			mm_KEYB11  =  	KEY_DOWN;
+
+            
+            
+			if(mm_KEYB10 == 0)      /////////++
+            {
+                VCOMDH++;
+//                SSD2828_ENTER_LP_mode(); //enter  LP mode	
+//                STM32TOSSD2828_W_COM(0xb7);		//LP DCS mode
+//                STM32TOSSD2828_W_DATA_16BITS(0x0752);
+                
+				DelayMs(6);
+                VCOM_set(VCOMDH);
+                LCD1602_display_hex(Line1602_1,10,VCOMDH);
+//                SSD2828_VIDEO_MODE_HS();
+                DelayMs(6);                
+            }
+                
+            if(mm_KEYB11 == 0)       /////////--
+            {
+                VCOMDH--;
+//                SSD2828_ENTER_LP_mode(); //enter  LP mode				
+				DelayMs(6);
+                VCOM_set(VCOMDH);
+                LCD1602_display_hex(Line1602_1,10,VCOMDH);
+//                SSD2828_VIDEO_MODE_HS();
+                DelayMs(6); 
+            }
+                
+            if(mm_KEYB1 == 0)       /////////otp
+            {
+                LCD1602_display_Line(Line1602_1,"OTP begin          ");
+                MAN_OTP_FLAG=0;
+                VCOMDC1 = VCOMDH;
+                if(VCOMDC1 == VCOM_default){    VCOMDC1=VCOMDC1+1;  }
+                MTP(); 
+                DelayMs(100);
+                MTP_OVER=1;
+                LCD1602_display_Line(Line1602_1,"finish          ");
+                reset_lcd();				
+                DelayMs(100);
+                VCOM_READ();					  //回读再复判
+                //VCOM_CHECK(VCOMDC1);
+                SSD2828_VIDEO_MODE_HS();	 
+            }
+            
+            DelayMs(70);
+             if((B6_event_flag==2))  {            B6_event_flag=0;    goto LCDTest;               }    
+        }
+    }        
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////---------------------------进入电测画面前判定一下VCOM是否为默认值，不为默认值则进行电测画面循环。
+///////////////////////////////////////////////////////////////////////////////////////////////////////////        
+        if((MIPI_READ_DATA[1] == VCOM_default)||(OTP_ERROR_MESAGE>0))
+        {
+            while(1)
+            {
+                DelayMs(100); 
+                LCD1602_display_Line(Line1602_0,"OTP NG           ");
+                LCD1602_display_hex(Line1602_1,10,MIPI_READ_DATA[1]);
+                if((B6_event_flag==2))  {            B6_event_flag=0;    goto LCDTest;               } 
+            }
+        }
         
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////---------------------------进行电测画面循环。
+///////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    pic_num = 1;   /////////设置第一幅显示图片，从1开始计数，
+    while(1)
+    { 	
         pic_num_string =  PIC_SET_CACHE[pic_num][0];  	/////读取需要显示的画面顺序，依次进行显示。。
 //        nosdnodelay=0;
        Pattern(pic_num_string);
 		LED_RUN();
-        
+		
+
 //		while(1)
 //		{
 //			Do_usart_cmd();		/////启用上位机操作时打开。。。
@@ -348,7 +474,7 @@ LCDTest:
        
 
         { PassKey();   }           /////////////真正延时，包含开关屏检测}
-        if(B6_event_flag == 2)  {            B6_event_flag=0;    goto LCDTest;               } 
+        if((B6_event_flag==2))  {            B6_event_flag=0;    goto LCDTest;               } 
        
          
     }    
@@ -356,6 +482,7 @@ LCDTest:
 
 
 	}	
+ 
 
 
 
