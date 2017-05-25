@@ -53,14 +53,18 @@ u8 PIC_SET_CACHE_nokia[PIC_SAVE_NUM_MAX][3]=
 {PIC_GREEN,0,0},     /////纯绿				/////OK
 {PIC_BLUE,1,0},     /////纯蓝				//////OK
 {PIC_WHITE,1,0},	/////纯白				//////OK
-{PIC_GRAY,0,128},     /////纯灰---灰阶128		//////OK
+//{PIC_GRAY,0,128},     /////纯灰---灰阶128		//////OK
 {PIC_BLACK,0,0},	//////纯黑				//////OK
+{PIC_GRAY,0,128},     /////纯灰---灰阶128		//////OK
 //{PIC_BORDER,1,0},	/////边框画面
 {PIC_colorbar_V,1,0},	//////垂直彩条		//////OK
 {PIC_colorbar_H,1,0},	/////水平彩条
-{PIC_FROM_SD,2,1},			////SD卡图片，第一幅		//////YUV16BIT-NG,YUV8BIT-NG
+////{PIC_CT_center,0,255},			////////CT 	中心点块颜色255			//////YUV16BIT-OK,YUV8BIT-OK
+//{PIC_checkerboard,1,0},		//////6x6棋盘格		//////YUV16BIT-OK,YUV8BIT-OK
+//{PIC_Dot_Flicker_A,0,127},	////flicker	-----127灰，模式2V1H---DOT  //////YUV16BIT-OK,YUV8BIT-NG
+//{PIC_CT_center,0,0},			////////CT 	中心点块颜色0		//////YUV16BIT-OK,YUV8BIT-OK
+//{PIC_FROM_SD,2,1},			////SD卡图片，第一幅		//////YUV16BIT-NG,YUV8BIT-NG
 {PIC_FROM_SD,2,2},			////SD卡图片，第二幅
-
 
 
 ////{PIC_RED,1,0},      /////纯红画面
@@ -275,38 +279,184 @@ void MTP(void)
 {	
     
     STM32TOSSD2828_W_COM(0xb7);		//LP DCS mode
-    STM32TOSSD2828_W_DATA_16BITS(0x0752);
-    DelayMs(10);  
+        STM32TOSSD2828_W_DATA_16BITS(0x0752);
+//        reg_send_check(0xb7,0x0752);
+        DelayMs(10);  
 
-	MIPI_SPI_Write(1,0x10);
+//	MIPI_SPI_Write(1,0x10);//////0523  去除，参照资料尝试去除
 	Delay(150);
 	
-    
+    {
+               
+			MIPI_SPI_Write(  03-1,0x00,0x00  );        
+			MIPI_SPI_Write(  05-1,0xff,0x12,0x89,0x01  );        	////#EXTC=1
 
-    MIPI_SPI_Write(  03-1,0x00,0x00  );        
-    MIPI_SPI_Write(  05-1,0xff,0x12,0x89,0x01  );        	////#EXTC=1
+			MIPI_SPI_Write(  03-1,0x00,0x80    );      	        ////#Orise mode enable
+			MIPI_SPI_Write(  04-1,0xff,0x12,0x89  );        
 
-    MIPI_SPI_Write(  03-1,0x00,0x80    );      	        ////#Orise mode enable
-    MIPI_SPI_Write(  04-1,0xff,0x12,0x89  ); 
-		
+			MIPI_SPI_Write(  03-1,0x00,0x90  );        
+			MIPI_SPI_Write(  03-1,0xff,0xb0  );       		////#MIPI 4 Lane
+
+			////#MIPI_SPI_Write(  03,0x0x39,0x0x00,0x0xa2 );      ////#//Monitor VS set
+			////#MIPI_SPI_Write(  05,0x0x39,0x0xc1,0x0x3f,0x0x00,0x0x3f ); 
+
+			////#-------------------- panel setting --------------------////#
+			MIPI_SPI_Write(  03-1,0x00,0x80     );                  ////#TCON Setting
+			MIPI_SPI_Write(  9,0xc0,0x4a,0x00,0x10,0x10,0x96,0x01,0x68,0x40);          
+			
+			MIPI_SPI_Write(  03-1,0x00,0x90);                       ////#Panel Timing Setting
+			MIPI_SPI_Write(  05-1,0xc0,0x3b,0x01,0x09);
+
+			MIPI_SPI_Write(  03-1,0x00,0x95 );                      ////#Source pre charge
+			MIPI_SPI_Write(  05-1,0xc0,0x00,0x00,0x00);          
+
+			MIPI_SPI_Write(  03-1,0x00,0x8B );                      ////#Panel Scan mode
+			MIPI_SPI_Write(  03-1,0xc0,0x00);
+					  
+			MIPI_SPI_Write(  03-1,0x00,0x8C  );                     ////# column inversion
+			MIPI_SPI_Write(  03-1,0xc0,0x00);
+
+			MIPI_SPI_Write(  03-1,0x00,0x80  );                     ////#frame rate:60Hz
+			MIPI_SPI_Write(  03-1,0xc1,0x33  );        
+			////#-------------------- power setting --------------------////#
+
+			////#MIPI_SPI_Write(  03-1,0x00,0xa0    );                   ////#dcdc setting
+			////#MIPI_SPI_Write(  10-1,0xc4,0x05,0x10,0x04,0x02,0x05,0x15,0x11,0x05,0x10,0x07,0x02,0x05,0x15,0x11 );         
+			////#MIPI_SPI_Write(  03-1,0x00,0xb0     );                  ////#clamp voltage setting
+			////#MIPI_SPI_Write(  04-1,0xc4,0x00,0x00);
+					  
+			MIPI_SPI_Write(  03-1,0x00,0x85     );                  ////#VGH=15V,0x VGL=-11V,0x pump ratio:VGH=5x,0x VGL=-3x,0x
+			MIPI_SPI_Write(  05-1,0xc5,0x09,0x09,0x47);
+				   
+			MIPI_SPI_Write(  03-1,0x00,0x00    );                   ////#GVDD=4.9V,0x NGVDD=-4.9V
+			MIPI_SPI_Write(  04-1,0xd8,0x29,0x29);
+
+			MIPI_SPI_Write(  03-1,0x00,0x80 );                     ////#GVDD,0x NGVDD MEASURE ENABLE
+			MIPI_SPI_Write(  03-1,0xC5,0x80 );         
+
+
+//			MIPI_SPI_Write(  03-1,0x00,0x00 );                      ////#VCOM=-1.075V
+//			MIPI_SPI_Write(  04-1,0xd9,0x00,0x4D);
+
+			MIPI_SPI_Write(  03-1,0x00,0x84 );                      ////#chopper
+			MIPI_SPI_Write(  03-1,0xC4,0x02 );                    
+			MIPI_SPI_Write(  03-1,0x00,0x93  );                     ////#pump option
+			MIPI_SPI_Write(  03-1,0xC4,0x04  );
+			MIPI_SPI_Write(  03-1,0x00,0x96  );                     ////#VCL regulator
+			MIPI_SPI_Write(  03-1,0xF5,0xE7 );
+			MIPI_SPI_Write(  03-1,0x00,0xA0 );                      ////#pump3 off
+			MIPI_SPI_Write(  03-1,0xF5,0x4A );
+			MIPI_SPI_Write(  03-1,0x00,0x8A );                      ////#blank frame
+			MIPI_SPI_Write(  03-1,0xC0,0x11 );
+			MIPI_SPI_Write(  03-1,0x00,0x83 );                      ////#vcom active
+			MIPI_SPI_Write(  03-1,0xF5,0x81 );
+
+			////#-------------------- for Power IC ---------------------------------
+			MIPI_SPI_Write(  03-1,0x00,0x90 );                      ////# 2xVPNL,0x x1.5=01,0x x2=05,0x x3=09
+			MIPI_SPI_Write(  04-1,0xC4,0x96,0x05 );
+
+			////#-------------------- panel enmode control --------------------////#
+			MIPI_SPI_Write(  03-1,0x00,0x80 ); ////#//panel timing state control 
+			MIPI_SPI_Write(  0x11-1,0xcb,0x14,0x14,0x14,0x14,0x14,0x14,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);  
+			MIPI_SPI_Write(  03-1,0x00,0x90);  ////#//panel timing state control
+			MIPI_SPI_Write(  8,0xcb,0x00,0x00,0x00,0x00,0x00,0x14,0x14);
+
+			////#-------------------- panel u2d/d2u mapping control --------------------////#
+			MIPI_SPI_Write(  03-1,0x00,0x80);  ////#//panel timing state control 
+			MIPI_SPI_Write(  0x10-1,0xCC,0x03,0x01,0x1E,0x1D,0x0B,0x09,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00); 
+			MIPI_SPI_Write(  03-1,0x00,0x90);  ////#//panel timing state control
+			MIPI_SPI_Write(  0x11-1,0xcc,0x00,0x00,0x00,0x00,0x00,0x0f,0x0d,0x04,0x02,0x1e,0x1d,0x0c,0x0a,0x00,0x00);
+
+			MIPI_SPI_Write(  03-1,0x00,0xa0);  ////#//panel timing state control
+			MIPI_SPI_Write(  0x0e,0xCC,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x10,0x0E);
+			  
+			MIPI_SPI_Write(  03-1,0x00,0xb0 ); ////#//panel timing state control
+			MIPI_SPI_Write(  0x10-1,0xCC,0x04,0x02,0x1D,0x1E,0x0E,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
+			  
+			MIPI_SPI_Write(  03-1,0x00,0xc0 ); ////#//panel timing state control
+			MIPI_SPI_Write(  0x11-1,0xCC,0x00,0x00,0x00,0x00,0x00,0x0A,0x0C,0x03,0x01,0x1D,0x1E,0x0D,0x0F,0x00,0x00);
+			  
+			MIPI_SPI_Write(  03-1,0x00,0xd0 ); ////#//panel timing state control
+			MIPI_SPI_Write(  0x0e,0xCC,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x09,0x0B);
+			////#-------------------- goa timing setting --------------------////#
+			MIPI_SPI_Write(  03-1,0x00,0x80 );                      ////#panel VST setting
+			MIPI_SPI_Write(  7,0xce,0x8b,0x03,0x18,0x8a,0x89,0x88 );         
+			MIPI_SPI_Write(  03-1,0x00,0x90);                       ////#panel VEND setting
+			MIPI_SPI_Write(  0x0a,0xce,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);          
+			MIPI_SPI_Write(  03-1,0x00,0xa0 );                      ////#panel CLKA setting
+			MIPI_SPI_Write(  0x11-1,0xce,0x30,0x88,0x08,0x00,0x18,0x40,0x87,0x09,0x00,0x86,0x0A,0x00,0x85,0x0B,0x00);       
+			MIPI_SPI_Write(  03-1,0x00,0xb0 );                      ////#panel CLKB setting
+			MIPI_SPI_Write(  0x11-1,0xce,0x30,0x84,0x0C,0x00,0x18,0x40,0x83,0x0D,0x00,0x82,0x0E,0x00,0x81,0x0F,0x00 );         
+
+				
+			MIPI_SPI_Write(  03-1,0x00,0xF0);                       ////#panel ECLK setting
+			MIPI_SPI_Write(  7,0xCE,0x01,0x20,0x02,0x01,0x10,0x00);          
+
+			////#-------------------- Gamma setting --------------------////#
+			MIPI_SPI_Write(  03-1,0x00,0x00);      ////#Gamma 2.2 +   
+			////#                                              v                        
+			MIPI_SPI_Write(  0x12-1,0xe1,0x08,0x3A,0x48,0x5B,0x68,0x7F,0x7B,0x8D,0x6C,0x5A,0x65,0x4F,0x30,0x18,0x12,0x10);
+			////#         nB.        L255,0xL251,0xL247,0xL240,0xL224,0xL200,0xL176,0xL144,0xL111,0xL79,0xL55,0xL31,0xL15,0xL8,0xL4,0xL0
+																																																		
+			MIPI_SPI_Write(  03-1,0x00,0x00);      ////#Gamma 2.2 -         
+			MIPI_SPI_Write(  0x12-1,0xe2,0x08,0x3A,0x48,0x5B,0x68,0x7F,0x7B,0x8D,0x6C,0x5A,0x65,0x4F,0x30,0x18,0x12,0x10);
+
+				
+			////#	MIPI_SPI_Write(   39,0x00,0x00);                       ////#Orise mode disable
+			////#	MIPI_SPI_Write(   39,0xff,0xff,0xff,0xff);        
+
+			MIPI_SPI_Write(  03-1,0x00,0x00 );                      ////#CMD2 disable
+			MIPI_SPI_Write(  05-1,0xFF,0xFF,0xFF,0xFF ); 
+
+        }
+
+			MIPI_SPI_Write(  03-1,0x00,0x00  );        
+			MIPI_SPI_Write(  05-1,0xff,0x12,0x89,0x01  );        	////#EXTC=1
+
+			MIPI_SPI_Write(  03-1,0x00,0x80    );      	        ////#Orise mode enable
+			MIPI_SPI_Write(  04-1,0xff,0x12,0x89  ); 
+	
+    MIPI_SPI_Write(1,0x10);//////0523  ADD，参照资料新增
+	Delay(150);
+        
 	MIPI_SPI_Write(  2,0x00,0x84    );      	        ////##-OTP Program Setting
 	MIPI_SPI_Write(  2,0xf6,0x5A  ); 
 	Delay(150);
 	
-
+	
+	
+    
+//    
     MIPI_SPI_Write(2,0x00,0x00);
 	MIPI_SPI_Write(1,0x11);
 	Delay(10);
 	MIPI_SPI_Write(1,0x28);
 	Delay(150);
-////////////////////==============set vcom======================		
-	MIPI_SPI_Write(2,0x00,0x00);
-    MIPI_SPI_Write(4,0xD9,0,VCOMDC1,VCOMDC1);
+//==============set vcom======================		
+//	MIPI_SPI_Write(2,0x00,0x00);
 //	MIPI_SPI_Write(2,0xD9,VCOMDC1);
 	Delay(10);
 
 
+//////==============set ID======================	
+//	if(ID_OK==1)	//若ID一次未燒		
+//	{	
+////# ID1
+//	MIPI_SPI_Write(2,0x00,0x00);
+//	MIPI_SPI_Write(2,0xD0,ID1_VALUE); 
+////	Delay(10);	
+///////# ID2,ID3
+//	MIPI_SPI_Write(2,0x00,0x00);
+//	MIPI_SPI_Write(3,0xD1,ID2_VALUE,ID3_VALUE); 
+
+
+//	MIPI_SPI_Write(2,0x00,0x00);
+//	MIPI_SPI_Write(3,0xD1,0x12,0x89); 
+//	Delay(10);
+//	}	
 	
+	
+//	
 	//##-Start NVM Program
 	MIPI_SPI_Write(2,0x00,0x00);
 	MIPI_SPI_Write(4,0xEB,0x01,0x5A,0xA5);
